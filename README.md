@@ -70,3 +70,5 @@ In the viewer, click **Presentation Mode** to hide controls and auto‑rotate. U
 **Notes**
 - If any line shows `MISSING`, the corresponding JSON in `checkpoints/` has not been generated yet.
 - **Our Model** score is reported from `checkpoints/hypergnn_cv_result.json` without releasing model code.
+
+test
