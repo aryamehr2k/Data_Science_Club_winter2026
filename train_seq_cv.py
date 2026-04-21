@@ -33,11 +33,24 @@ BATCH_EPOCHS = 120
 LR = 1e-3
 WD = 1e-4
 PATIENCE = 15
+VAL_FRAC = 0.15
 
 
-def train_fold(X, y, train_idx, test_idx):
-    Xtr = torch.tensor(X[train_idx], dtype=torch.float32, device=DEVICE)
-    ytr = torch.tensor(y[train_idx], dtype=torch.float32, device=DEVICE)
+def split_train_val(train_idx, seed):
+    rng = np.random.default_rng(seed)
+    idx = np.array(train_idx, copy=True)
+    rng.shuffle(idx)
+    n_val = max(1, int(round(VAL_FRAC * len(idx))))
+    return idx[n_val:], idx[:n_val]
+
+
+def train_fold(X, y, train_idx, test_idx, fold_seed):
+    tr_idx, val_idx = split_train_val(train_idx, fold_seed)
+
+    Xtr = torch.tensor(X[tr_idx], dtype=torch.float32, device=DEVICE)
+    ytr = torch.tensor(y[tr_idx], dtype=torch.float32, device=DEVICE)
+    Xval = torch.tensor(X[val_idx], dtype=torch.float32, device=DEVICE)
+    yval = torch.tensor(y[val_idx], dtype=torch.float32, device=DEVICE)
     Xte = torch.tensor(X[test_idx], dtype=torch.float32, device=DEVICE)
     yte = torch.tensor(y[test_idx], dtype=torch.float32, device=DEVICE)
 
@@ -45,7 +58,7 @@ def train_fold(X, y, train_idx, test_idx):
     opt = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=WD)
     loss_fn = nn.MSELoss()
 
-    best_sp = -1e9
+    best_val_sp = -1e9
     best_state = None
     bad = 0
 
@@ -59,12 +72,12 @@ def train_fold(X, y, train_idx, test_idx):
 
         model.eval()
         with torch.no_grad():
-            p = model(Xte).detach().cpu().numpy()
-            t = yte.detach().cpu().numpy()
-        sp = spearmanr_np(p, t)
+            pv = model(Xval).detach().cpu().numpy()
+            tv = yval.detach().cpu().numpy()
+        val_sp = spearmanr_np(pv, tv)
 
-        if sp > best_sp:
-            best_sp = sp
+        if val_sp > best_val_sp:
+            best_val_sp = val_sp
             best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
             bad = 0
         else:
@@ -90,7 +103,7 @@ def main():
 
     for fold, (train_idx, test_idx) in enumerate(kfold_indices(len(y), 5, SEED), start=1):
         print(f"\n===== Fold {fold} =====")
-        sp = train_fold(X, y, train_idx, test_idx)
+        sp = train_fold(X, y, train_idx, test_idx, fold_seed=SEED + fold)
         print(f"Fold {fold} Spearman: {sp:.4f}")
         scores.append(sp)
 

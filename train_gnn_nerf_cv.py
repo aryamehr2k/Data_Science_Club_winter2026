@@ -25,7 +25,8 @@ print("Device:", DEVICE)
 CSV_PATH = "urn_mavedb_00001234-a-1_scores.csv"
 PDB_PATH = "data/structures/TP53_RCSB.pdb"
 CHAIN_ID = "A"
-MSA_PATH = "data/msa/tp53_alignment.aln"
+
+NERF_FEATS = "data/nerf/residue_nerf_features.npy"
 
 BATCH_SIZE = 1
 EPOCHS = 120
@@ -34,7 +35,7 @@ WD = 1e-4
 PATIENCE = 15
 VAL_FRAC = 0.15
 
-OUT_PATH = "checkpoints/gnn_entropy_cv_result.json"
+OUT_PATH = "checkpoints/gnn_nerf_cv_result.json"
 
 
 def split_train_val(train_idx, seed):
@@ -109,16 +110,14 @@ def train_one_fold(ds, train_idx, test_idx, fold_seed):
 
 
 def main():
-    print("Loading dataset (kNN edges + entropy)...")
+    print("Loading dataset (kNN edges + NeRF features)...")
     ds = TP53StructureDataset(
         CSV_PATH,
         PDB_PATH,
         chain_id=CHAIN_ID,
         graph_type="knn",
-        msa_path=MSA_PATH,
-        use_entropy=True,
-        use_dca=False,
-        msa_cache_path="cache/tp53_msa_features.npz",
+        use_nerf=True,
+        nerf_features_path=NERF_FEATS,
     )
 
     scores = []
@@ -133,22 +132,14 @@ def main():
     std_sp = float(scores.std())
 
     print("\n==============================")
-    print("GNN + Entropy 5-Fold CV Result")
+    print("GNN + NeRF Features 5-Fold CV Result")
     print(f"Mean Spearman: {mean_sp:.4f}")
     print(f"Std  Spearman: {std_sp:.4f}")
     print("==============================")
 
     os.makedirs("checkpoints", exist_ok=True)
     with open(OUT_PATH, "w") as f:
-        json.dump(
-            {
-                "mean_spearman": mean_sp,
-                "std_spearman": std_sp,
-                "msa": MSA_PATH,
-            },
-            f,
-            indent=2,
-        )
+        json.dump({"mean_spearman": mean_sp, "std_spearman": std_sp}, f, indent=2)
 
     print("Saved:", OUT_PATH)
 

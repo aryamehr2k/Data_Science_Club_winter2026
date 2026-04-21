@@ -105,6 +105,8 @@ class TP53StructureDataset(Dataset):
         use_dca=False,
         dca_scale=1.0,
         msa_cache_path="cache/tp53_msa_features.npz",
+        nerf_features_path=None,
+        use_nerf=False,
     ):
         super().__init__()
 
@@ -137,6 +139,7 @@ class TP53StructureDataset(Dataset):
 
         self.entropy = None
         self.dca_scores = None
+        self.nerf_features = None
         if msa_path and (use_entropy or use_dca):
             ent, dca = load_or_compute_msa_features(
                 msa_path=msa_path,
@@ -149,6 +152,21 @@ class TP53StructureDataset(Dataset):
                 self.X = torch.cat([self.X, self.entropy], dim=1)
             if use_dca:
                 self.dca_scores = dca
+
+        if use_nerf:
+            if not nerf_features_path or not os.path.exists(nerf_features_path):
+                raise FileNotFoundError(
+                    "NeRF features not found. Run: python nerf/train_nerf.py "
+                    "and python nerf/extract_features.py first."
+                )
+            nerf = np.load(nerf_features_path)
+            if nerf.shape[0] != self.N:
+                raise ValueError(
+                    f"NeRF features length mismatch: got {nerf.shape[0]} residues, "
+                    f"expected {self.N}."
+                )
+            self.nerf_features = torch.from_numpy(nerf).float()
+            self.X = torch.cat([self.X, self.nerf_features], dim=1)
 
         if graph_type == "chain":
             edge_index_np = build_chain_graph(self.N)

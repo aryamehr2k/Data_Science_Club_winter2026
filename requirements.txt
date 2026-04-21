@@ -6,3 +6,5 @@ requests
 pandas
 fair-esm
 torch-geometric
+fastapi
+uvicorn

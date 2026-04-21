@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Protein Graph WebGL Showcase</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=10" />
 </head>
 <body>
   <div id="header">
@@ -21,12 +21,25 @@
       </select>
     </label>
     <label>Point Size
-      <input id="pointSize" type="range" min="1" max="8" step="1" value="3" />
+      <input id="pointSize" type="range" min="1" max="8" step="1" value="2" />
     </label>
     <label>Edge Opacity
-      <input id="edgeOpacity" type="range" min="0" max="1" step="0.05" value="0.15" />
+      <input id="edgeOpacity" type="range" min="0" max="1" step="0.05" value="0.22" />
     </label>
-    <label><input type="checkbox" id="showEdges" checked /> Show edges</label>
+    <label><input type="checkbox" id="showEdges" /> Show edges</label>
+    <label><input type="checkbox" id="showBackbone" checked /> Backbone</label>
+    <label><input type="checkbox" id="showFocus" checked /> Mutation Focus</label>
+    <label>Backbone Width
+      <input id="backboneWidth" type="range" min="0.6" max="2.2" step="0.1" value="1.2" />
+    </label>
+    <label>Backbone Quality
+      <select id="backboneQuality">
+        <option value="low">Low</option>
+        <option value="med" selected>Medium</option>
+        <option value="high">High</option>
+      </select>
+    </label>
+    <label><input type="checkbox" id="showSpheres" checked /> Residue Spheres</label>
     <button id="reset">Reset Camera</button>
   </div>
 
@@ -39,8 +52,53 @@
       <div class="panel-title">Embedding Space (PCA‑3D)</div>
       <canvas id="canvasEmbed"></canvas>
     </div>
+    <div class="panel inspector-panel">
+      <div class="panel-title">Mutation Inspector</div>
+      <div class="inspector">
+        <label>Residue Position
+          <select id="residueSelect"></select>
+        </label>
+        <div class="row">
+          <label>Wild‑Type
+            <input id="wtAA" type="text" readonly />
+          </label>
+          <label>Mutant
+            <select id="mutAA"></select>
+          </label>
+        </div>
+        <div class="risk-card">
+          <div class="score" id="scoreValue">—</div>
+          <div class="risk-label" id="riskLabel">—</div>
+          <div class="risk-bar">
+            <div id="riskFill"></div>
+          </div>
+          <div class="risk-meta" id="riskMeta">Pick a mutation to see relative impact.</div>
+        </div>
+        <div class="cart-actions">
+          <button id="addMutBtn">Add to Set</button>
+          <button id="pymolBtn">Export PyMOL</button>
+        </div>
+      </div>
+      <div class="panel-subtitle">Mutation Set (combined)</div>
+      <div class="cart-card">
+        <div id="cartList" class="cart-list">
+          <div class="cart-empty">No mutations added. Use "Add to Set" to combine mutations.</div>
+        </div>
+        <div class="combined-row">
+          <div class="combined-num" id="combinedDamage">—</div>
+          <div class="combined-label" id="combinedLabel">Add mutations to compute combined damage</div>
+        </div>
+        <div class="combined-bar"><div id="combinedFill"></div></div>
+        <div class="cart-footer">
+          <button id="clearCartBtn" class="subtle">Clear set</button>
+          <span class="cart-note" id="cartNote"></span>
+        </div>
+      </div>
+      <div class="panel-subtitle">Residue 3D (ball‑and‑stick)</div>
+      <canvas id="canvasResidue"></canvas>
+    </div>
   </div>
 
-  <script type="module" src="main.js"></script>
+  <script type="module" src="main.js?v=10"></script>
 </body>
 </html>

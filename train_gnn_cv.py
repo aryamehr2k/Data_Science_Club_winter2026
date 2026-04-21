@@ -31,8 +31,17 @@ EPOCHS = 120
 LR = 1e-3
 WD = 1e-4
 PATIENCE = 15
+VAL_FRAC = 0.15
 
 OUT_PATH = "checkpoints/gnn_cv_result.json"
+
+
+def split_train_val(train_idx, seed):
+    rng = np.random.default_rng(seed)
+    idx = np.array(train_idx, copy=True)
+    rng.shuffle(idx)
+    n_val = max(1, int(round(VAL_FRAC * len(idx))))
+    return idx[n_val:], idx[:n_val]
 
 
 def evaluate(model, loader):
@@ -50,11 +59,15 @@ def evaluate(model, loader):
     return float(sp)
 
 
-def train_one_fold(ds, train_idx, test_idx):
-    train_subset = torch.utils.data.Subset(ds, train_idx)
+def train_one_fold(ds, train_idx, test_idx, fold_seed):
+    tr_idx, val_idx = split_train_val(train_idx, fold_seed)
+
+    train_subset = torch.utils.data.Subset(ds, tr_idx.tolist())
+    val_subset = torch.utils.data.Subset(ds, val_idx.tolist())
     test_subset = torch.utils.data.Subset(ds, test_idx)
 
     train_loader = DataLoader(train_subset, batch_size=BATCH_SIZE, shuffle=True)
+    val_loader = DataLoader(val_subset, batch_size=BATCH_SIZE, shuffle=False)
     test_loader = DataLoader(test_subset, batch_size=BATCH_SIZE, shuffle=False)
 
     in_dim = ds.X.shape[1]
@@ -63,7 +76,8 @@ def train_one_fold(ds, train_idx, test_idx):
     opt = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=WD)
     loss_fn = nn.MSELoss()
 
-    best_sp = -1e9
+    best_val_sp = -1e9
+    best_state = None
     bad = 0
 
     for _ in range(EPOCHS):
@@ -76,17 +90,21 @@ def train_one_fold(ds, train_idx, test_idx):
             loss.backward()
             opt.step()
 
-        sp = evaluate(model, test_loader)
+        val_sp = evaluate(model, val_loader)
 
-        if sp > best_sp:
-            best_sp = sp
+        if val_sp > best_val_sp:
+            best_val_sp = val_sp
+            best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
             bad = 0
         else:
             bad += 1
             if bad >= PATIENCE:
                 break
 
-    return best_sp
+    if best_state is not None:
+        model.load_state_dict({k: v.to(DEVICE) for k, v in best_state.items()})
+
+    return evaluate(model, test_loader)
 
 
 def main():
@@ -96,7 +114,7 @@ def main():
     scores = []
     for fold, (train_idx, test_idx) in enumerate(kfold_indices(len(ds), 5, SEED)):
         print(f"\n===== Fold {fold + 1} =====")
-        sp = train_one_fold(ds, train_idx, test_idx)
+        sp = train_one_fold(ds, train_idx, test_idx, fold_seed=SEED + fold + 1)
         print(f"Fold {fold + 1} Spearman: {sp:.4f}")
         scores.append(sp)
 
