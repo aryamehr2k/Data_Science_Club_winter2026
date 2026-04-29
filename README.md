@@ -1,4 +1,6 @@
-# TP53 Mutation Effect Prediction — Structure-Aware GNN + Sequence Baselines
+# ACHILLES — TP53 Mutation Effect Prediction (Structure-Aware GNN)
+
+> **Repo:** `achilles-tp53-protein-DS2026` · Data Science Club, Winter 2026
 
 Predict the functional impact of single amino-acid substitutions in **human
 TP53** against a 1,157-mutation MAVE (MaveDB) dataset. This repository ships:
@@ -107,7 +109,8 @@ doing test-fold early stopping in the first place.
 ## 2. Setup
 
 ```bash
-cd /home/kay/Documents/github/Data_Science_Club_winter2026
+git clone https://github.com/aryamehr2k/achilles-tp53-protein-DS2026.git
+cd achilles-tp53-protein-DS2026
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
